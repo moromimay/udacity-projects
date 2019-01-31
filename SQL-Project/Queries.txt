@@ -1,0 +1,59 @@
+/*Query 1: Qual cliente gastou mais em músicas por país?*/
+WITH sub as (
+	SELECT c.Country, SUM(i.Total) Total, c.FirstName, c.LastName, i.CustomerId
+	FROM Customer c
+	JOIN Invoice i ON i.CustomerId = c.CustomerId
+	GROUP BY c.Country, c.FirstName, c.LastName
+), 
+sub2 as (
+	SELECT MAX(Total) TotalS, Country
+	FROM sub
+	GROUP BY Country
+)
+SELECT s1.Country, s1.Total, s1.FirstName, s1.LastName, s1.CustomerId
+FROM sub s1
+INNER JOIN sub2 s2 ON s1.Country = s2.Country
+WHERE s1.Total = s2.TotalS;
+
+/*Query 2: Qual o gênero musical mais popular em cada país?*/
+WITH sub as (
+	SELECT SUM(l.Quantity) Value, c.Country Country, g.Name, g.GenreId
+	FROM Customer c
+	JOIN Invoice i ON i.CustomerId = c.CustomerId
+	JOIN InvoiceLine l ON l.InvoiceId = i.InvoiceId
+	JOIN Track t ON t.TrackId = l.TrackId
+	JOIN Genre g ON g.GenreId = t.GenreId
+	GROUP BY Country, g.Name
+), 
+sub2 as (
+	SELECT MAX(Value) max_value, Country
+	FROM sub
+	GROUP BY Country
+)
+SELECT s1.Value, s1.Country, s1.Name, s1.GenreId
+FROM sub s1
+INNER JOIN sub2 s2 ON s1.Country = s2.Country
+WHERE s1.Value = s2.max_value;
+
+/*Query 3: Qual cliente gastou mais com a banda Iron Maiden?*/
+SELECT a.Name, SUM(l.Quantity * l.UnitPrice) Value, c.CustomerId Client, c.FirstName
+FROM Customer c
+JOIN Invoice i ON i.CustomerId = c.CustomerId
+JOIN InvoiceLine l ON l.InvoiceId = i.InvoiceId
+JOIN Track t ON t.TrackId = l.TrackId
+JOIN Album al ON al.AlbumId = t.AlbumId
+JOIN Artist a ON a.ArtistId = al.ArtistId
+WHERE a.Name = 'Iron Maiden'
+GROUP BY a.Name, Client, c.FirstName
+ORDER BY Value DESC;
+
+/*Query 4: Top 10 bandas com mais músicas no database.*/
+SELECT a.ArtistId, a.Name, COUNT(*) Songs
+FROM Track t
+JOIN Genre g ON g.GenreId = t.GenreId
+JOIN Album al ON al.AlbumId = t.AlbumId
+JOIN Artist a ON a.ArtistId = al.ArtistId
+WHERE g.Name = 'Rock'
+GROUP BY al.ArtistId, a.Name
+ORDER BY Songs DESC
+LIMIT 10;
